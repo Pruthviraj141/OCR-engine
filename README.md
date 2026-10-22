@@ -1,73 +1,93 @@
 # OCR-engine
 
-High-performance OCR microservice powered by **Indra OCR** and **FastAPI**, designed for zero-config deployment on Railway with GitHub Actions CI/CD.
+The simplest reliable, self-hosted Indra OCR service built with **FastAPI** and the official **`indra-ocr`** package, designed for Railway native Python deployment.
 
 ## Features
 
-- **Indra OCR Integration**: Runs ONNX-accelerated OCR model directly inside the service.
-- **FastAPI Endpoints**:
-  - `GET /`: Health check / welcome message.
-  - `GET /health`: Healthcheck endpoint for Railway / load balancers.
-  - `POST /ocr`: Extracts text from PDF or image documents (`multipart/form-data`).
-- **Security**: Protects endpoints with `X-API-Key` header authentication (`OCR_API_TOKEN`).
-- **Memory & Resource Guardrails**:
-  - Maximum upload size: 8 MB.
-  - Maximum pages processed per request: 5 pages.
-  - Threadpool execution with concurrency lock to avoid memory exhaustion on resource-constrained instances.
-- **Automated CI/CD**: Tests via pytest and deploys to Railway on push to `main`.
+- **Direct Model Execution**: Runs the official `indra-ocr` model locally on the server CPU (no external OCR inference API, no GPU needed).
+- **Public API (Zero Authentication)**: No API keys, no bearer tokens, no authorization headers, and no user accounts.
+- **Full Document Support**: Extracts text from PDFs (multi-page) and common image formats (`.png`, `.jpg`, `.jpeg`, `.webp`, `.tiff`, `.bmp`).
+- **Resource Guardrails**:
+  - Model loaded once at startup.
+  - Concurrency lock to process requests sequentially on CPU instances without exhausting RAM.
+  - Configurable upload limit (`MAX_UPLOAD_BYTES`, defaults to 25 MB).
+  - Safe tempfile lifecycle cleanup on success or error.
 
 ---
 
-## Local Development & Setup
+## API Endpoints
 
-### 1. Create and Activate Virtual Environment
+### 1. `GET /`
+Returns a confirmation that the service is running.
+```json
+{
+  "message": "Indra OCR Service is running"
+}
+```
 
+### 2. `GET /health`
+Health check endpoint for Railway.
+```json
+{
+  "status": "ok"
+}
+```
+
+### 3. `POST /ocr`
+Accepts a PDF or image file as multipart form data with field name `file`.
+
+**Request:**
+```bash
+curl -X POST "https://YOUR-RAILWAY-DOMAIN/ocr" \
+  -F "file=@sample.pdf"
+```
+
+**Response Format:**
+```json
+{
+  "success": true,
+  "filename": "sample.pdf",
+  "pages_processed": 2,
+  "text": "All extracted text in reading order..."
+}
+```
+
+Interactive Swagger documentation is available at `/docs`.
+
+---
+
+## Local Development & Testing
+
+### 1. Virtual Environment Setup
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-```
-
-### 2. Install Dependencies
-
-```bash
-pip install --upgrade pip
 pip install -r requirements.txt pytest httpx
 ```
 
-### 3. Run Tests
-
+### 2. Run Tests
 ```bash
 pytest -v
 ```
 
-### 4. Start Local Server
-
+### 3. Start Local Server
 ```bash
-export OCR_API_TOKEN="your-local-secret"
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 5. Test OCR Endpoint
-
-```bash
-curl -X POST "http://localhost:8000/ocr" \
-  -H "X-API-Key: your-local-secret" \
-  -F "file=@sample.pdf"
 ```
 
 ---
 
-## Deployment (Railway + GitHub Actions)
+## Railway Deployment Settings
 
-1. **Connect GitHub Repo to Railway**:
-   - Create a project on Railway and link the repository.
-   - Railway Railpack automatically detects Python via `.python-version` and `requirements.txt`.
-2. **Environment Variables**:
-   - Set `OCR_API_TOKEN` in Railway environment variables.
-3. **Railway Service Settings**:
-   - Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - Healthcheck Path: `/health`
-4. **CI/CD Configuration**:
-   - Generate a Railway Project Token.
-   - In GitHub repository settings: `Settings -> Secrets and variables -> Actions`, add `RAILWAY_TOKEN`.
-   - On every push to `main`, GitHub Actions runs tests and triggers automated deployment.
+1. **Connect GitHub Repository**: Link `OCR-engine` directly to your Railway project. Railway will automatically build via Railpack and trigger deployments on push to `main`.
+2. **Start Command**:
+   ```bash
+   uvicorn main:app --host 0.0.0.0 --port $PORT
+   ```
+3. **Healthcheck Path**:
+   ```
+   /health
+   ```
+4. **Environment Variables**:
+   - No required secrets or tokens.
+   - Optional: `MAX_UPLOAD_BYTES` (e.g. `26214400` for 25 MB).

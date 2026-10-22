@@ -4,12 +4,13 @@ import main
 
 
 class FakeOCR:
-    def convert(self, path, max_pages=100):
-        yield 0, SimpleNamespace(text="Hello from Indra OCR")
+    def convert(self, path):
+        # Yield 2 pages to verify page counting and text concatenation
+        yield 0, SimpleNamespace(text="First page content")
+        yield 1, SimpleNamespace(text="Second page content")
 
 
-def test_health_and_text_extraction(monkeypatch):
-    monkeypatch.setenv("OCR_API_TOKEN", "test-token")
+def test_public_api_endpoints(monkeypatch):
     monkeypatch.setattr(
         main.indra_ocr,
         "load",
@@ -17,37 +18,53 @@ def test_health_and_text_extraction(monkeypatch):
     )
 
     with TestClient(main.app) as client:
-        # Test root endpoint
-        root = client.get("/")
-        assert root.status_code == 200
-        assert root.json() == {"message": "Indra OCR Service is running"}
+        # 1. GET /
+        root_res = client.get("/")
+        assert root_res.status_code == 200
+        assert root_res.json() == {"message": "Indra OCR Service is running"}
 
-        # Test health endpoint
-        health = client.get("/health")
-        assert health.status_code == 200
-        assert health.json() == {"status": "ok"}
+        # 2. GET /health
+        health_res = client.get("/health")
+        assert health_res.status_code == 200
+        assert health_res.json() == {"status": "ok"}
 
-        # Test OCR endpoint unauthorized
-        unauth = client.post(
-            "/ocr",
-            files={"file": ("sample.pdf", b"test content", "application/pdf")},
-        )
-        assert unauth.status_code == 401
-
-        # Test OCR endpoint with valid key
+        # 3. POST /ocr - No authentication required
         response = client.post(
             "/ocr",
-            headers={"X-API-Key": "test-token"},
             files={
                 "file": (
                     "sample.pdf",
-                    b"test document",
+                    b"%PDF-1.4 sample content",
                     "application/pdf",
                 )
             },
         )
         assert response.status_code == 200
         data = response.json()
-        assert data["text"] == "Hello from Indra OCR"
-        assert data["pages_processed"] == 1
-        assert data["truncated"] is False
+        assert data["success"] is True
+        assert data["filename"] == "sample.pdf"
+        assert data["pages_processed"] == 2
+        assert "First page content\n\nSecond page content" in data["text"]
+
+
+def test_ocr_validation_errors(monkeypatch):
+    monkeypatch.setattr(
+        main.indra_ocr,
+        "load",
+        lambda **kwargs: FakeOCR(),
+    )
+
+    with TestClient(main.app) as client:
+        # Unsupported file extension
+        bad_ext = client.post(
+            "/ocr",
+            files={"file": ("test.exe", b"malicious binary", "application/octet-stream")},
+        )
+        assert bad_ext.status_code == 415
+
+        # Empty file upload
+        empty = client.post(
+            "/ocr",
+            files={"file": ("empty.pdf", b"", "application/pdf")},
+        )
+        assert empty.status_code == 400
