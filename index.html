@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Indra OCR Engine - Live Test Interface</title>
+  <title>Indra OCR - Cloud Document Scanner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #090d16;
-      --card-bg: rgba(18, 24, 38, 0.7);
+      --card-bg: rgba(18, 24, 38, 0.75);
       --card-border: rgba(255, 255, 255, 0.08);
       --primary: #6366f1;
       --primary-hover: #4f46e5;
@@ -19,6 +19,7 @@
       --text-muted: #94a3b8;
       --success: #10b981;
       --error: #ef4444;
+      --code-bg: #030712;
     }
 
     * {
@@ -28,14 +29,14 @@
     }
 
     body {
-      background: radial-gradient(circle at top, #1e1b4b 0%, #090d16 100%);
+      background: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #090d16 100%);
       color: var(--text-main);
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 2.5rem 1.5rem;
+      padding: 3rem 1.5rem;
     }
 
     .container {
@@ -48,21 +49,21 @@
       margin-bottom: 2.5rem;
     }
 
-    .badge {
+    .cloud-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      background: rgba(16, 185, 129, 0.12);
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(16, 185, 129, 0.1);
       border: 1px solid rgba(16, 185, 129, 0.25);
       border-radius: 9999px;
       color: var(--success);
       font-size: 0.85rem;
       font-weight: 600;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
 
-    .badge-dot {
+    .status-dot {
       width: 8px;
       height: 8px;
       background: var(--success);
@@ -71,11 +72,11 @@
     }
 
     h1 {
-      font-size: 2.4rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
       margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, #fff 40%, var(--accent) 100%);
+      background: linear-gradient(135deg, #ffffff 40%, var(--accent) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -83,30 +84,35 @@
     p.subtitle {
       color: var(--text-muted);
       font-size: 1rem;
+      max-width: 600px;
+      margin: 0 auto;
     }
 
-    .api-status {
+    .endpoint-badge {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       color: var(--text-muted);
-      margin-top: 0.5rem;
-      word-break: break-all;
+      margin-top: 0.75rem;
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 6px;
+      display: inline-block;
     }
 
     .card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      backdrop-filter: blur(16px);
-      padding: 2rem;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
+      padding: 2.25rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
       margin-bottom: 2rem;
     }
 
     .upload-area {
-      border: 2px dashed rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 3rem 1.5rem;
+      border: 2px dashed rgba(255, 255, 255, 0.16);
+      border-radius: 14px;
+      padding: 3.5rem 2rem;
       text-align: center;
       cursor: pointer;
       transition: all 0.25s ease;
@@ -116,112 +122,143 @@
     .upload-area:hover, .upload-area.dragover {
       border-color: var(--primary);
       background: rgba(99, 102, 241, 0.06);
+      transform: translateY(-1px);
     }
 
     .upload-icon {
-      font-size: 2.5rem;
+      font-size: 3rem;
       margin-bottom: 1rem;
     }
 
-    .upload-text {
-      font-size: 1.1rem;
-      font-weight: 500;
+    .upload-title {
+      font-size: 1.15rem;
+      font-weight: 600;
       margin-bottom: 0.4rem;
     }
 
-    .upload-hint {
+    .upload-sub {
       color: var(--text-muted);
-      font-size: 0.85rem;
+      font-size: 0.875rem;
     }
 
     #fileInput {
       display: none;
     }
 
-    .selected-file {
-      margin-top: 1.25rem;
+    .selected-card {
+      margin-top: 1.5rem;
       display: none;
       align-items: center;
       justify-content: space-between;
-      padding: 0.85rem 1.25rem;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+    }
+
+    .file-details {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .file-icon {
+      font-size: 1.5rem;
+    }
+
+    .file-name {
       font-size: 0.95rem;
+      font-weight: 500;
+      max-width: 450px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .file-size {
+      color: var(--text-muted);
+      font-size: 0.8rem;
     }
 
     .btn {
       width: 100%;
       margin-top: 1.5rem;
-      padding: 0.9rem;
+      padding: 1rem;
       font-size: 1rem;
       font-weight: 600;
       color: white;
       background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 10px;
+      box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
     }
 
     .btn:hover:not(:disabled) {
-      opacity: 0.92;
-      transform: translateY(-1px);
+      opacity: 0.95;
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.5);
     }
 
     .btn:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
 
     .result-section {
       display: none;
     }
 
-    .result-header {
+    .result-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--card-border);
     }
 
-    .stats {
+    .meta-group {
       display: flex;
-      gap: 1.5rem;
+      gap: 1.75rem;
       font-size: 0.9rem;
       color: var(--text-muted);
     }
 
-    .stats span strong {
+    .meta-group strong {
       color: var(--text-main);
     }
 
-    .copy-btn {
+    .action-btn {
       background: rgba(255, 255, 255, 0.08);
       border: 1px solid rgba(255, 255, 255, 0.15);
       color: var(--text-main);
-      padding: 6px 14px;
-      border-radius: 6px;
+      padding: 8px 16px;
+      border-radius: 8px;
       font-size: 0.85rem;
+      font-weight: 500;
       cursor: pointer;
       font-family: inherit;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
     }
 
-    .copy-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
     }
 
-    .output-box {
+    .editor-container {
       width: 100%;
-      height: 380px;
-      background: #030712;
+      height: 420px;
+      background: var(--code-bg);
       border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 1.25rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.9rem;
@@ -231,8 +268,7 @@
       white-space: pre-wrap;
     }
 
-    .loader {
-      display: inline-block;
+    .spinner {
       width: 18px;
       height: 18px;
       border: 2px solid rgba(255,255,255,0.3);
@@ -244,73 +280,93 @@
     @keyframes spin {
       to { transform: rotate(360deg); }
     }
+
+    .notice {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 1.5rem;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
     <header>
-      <div class="badge">
-        <span class="badge-dot"></span>
-        Render Service Live
+      <div class="cloud-pill">
+        <span class="status-dot"></span>
+        Self-Contained Cloud Client
       </div>
-      <h1>Indra OCR Engine</h1>
-      <p class="subtitle">Extract text from PDFs and images using self-hosted Indra OCR</p>
-      <div class="api-status">API: https://ocr-engine-42cm.onrender.com/ocr</div>
+      <h1>Indra OCR Scanner</h1>
+      <p class="subtitle">Extract text from documents and images without running any local servers.</p>
+      <div class="endpoint-badge">Target: https://ocr-engine-42cm.onrender.com/ocr</div>
     </header>
 
     <div class="card">
       <div class="upload-area" id="dropZone">
         <div class="upload-icon">📄</div>
-        <div class="upload-text">Click to upload or drag & drop</div>
-        <div class="upload-hint">Supports PDF, PNG, JPG, JPEG, WEBP, TIFF (Max 25 MB)</div>
+        <div class="upload-title">Drop your PDF or image here, or browse</div>
+        <div class="upload-sub">Supports PDF, PNG, JPG, JPEG, WEBP, TIFF (Max 25 MB)</div>
         <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.webp,.tiff,.tif,.bmp">
       </div>
 
-      <div class="selected-file" id="fileInfo">
-        <span id="fileName">sample.pdf</span>
-        <span id="fileSize" style="color: var(--text-muted);">150 KB</span>
+      <div class="selected-card" id="filePreview">
+        <div class="file-details">
+          <div class="file-icon" id="fileIcon">📑</div>
+          <div>
+            <div class="file-name" id="fileName">document.pdf</div>
+            <div class="file-size" id="fileSize">0 KB</div>
+          </div>
+        </div>
+        <button class="action-btn" id="changeBtn">Change</button>
       </div>
 
-      <button class="btn" id="submitBtn" disabled>
-        <span id="btnText">Extract Text with OCR</span>
+      <button class="btn" id="processBtn" disabled>
+        <span id="btnLabel">Extract Text with Cloud OCR</span>
       </button>
     </div>
 
     <div class="card result-section" id="resultCard">
-      <div class="result-header">
-        <div class="stats">
-          <span>Processed: <strong id="pagesCount">0</strong> pages</span>
+      <div class="result-bar">
+        <div class="meta-group">
+          <span>Pages: <strong id="pagesCount">0</strong></span>
           <span>Time: <strong id="timeElapsed">0s</strong></span>
+          <span>Chars: <strong id="charsCount">0</strong></span>
         </div>
-        <button class="copy-btn" id="copyBtn">Copy Text</button>
+        <button class="action-btn" id="copyBtn">📋 Copy Text</button>
       </div>
-      <div class="output-box" id="outputBox"></div>
+      <div class="editor-container" id="outputArea"></div>
+    </div>
+
+    <div class="notice">
+      ⚡ Standalone HTML. You can open this file anywhere directly in your browser.
     </div>
   </div>
 
   <script>
-    // If served from FastAPI (e.g. localhost:8000), use /ocr. Otherwise fallback to live Render URL.
-    const API_URL = (window.location.protocol.startsWith('http') && !window.location.host.includes('render.com')) 
-      ? "/ocr" 
-      : "https://ocr-engine-42cm.onrender.com/ocr";
+    // Direct Cloud Render OCR endpoint (No local backend required)
+    const CLOUD_API_URL = "https://ocr-engine-42cm.onrender.com/ocr";
 
     const dropZone = document.getElementById("dropZone");
     const fileInput = document.getElementById("fileInput");
-    const fileInfo = document.getElementById("fileInfo");
+    const filePreview = document.getElementById("filePreview");
     const fileName = document.getElementById("fileName");
     const fileSize = document.getElementById("fileSize");
-    const submitBtn = document.getElementById("submitBtn");
-    const btnText = document.getElementById("btnText");
+    const fileIcon = document.getElementById("fileIcon");
+    const changeBtn = document.getElementById("changeBtn");
+    const processBtn = document.getElementById("processBtn");
+    const btnLabel = document.getElementById("btnLabel");
     const resultCard = document.getElementById("resultCard");
-    const outputBox = document.getElementById("outputBox");
+    const outputArea = document.getElementById("outputArea");
     const pagesCount = document.getElementById("pagesCount");
     const timeElapsed = document.getElementById("timeElapsed");
+    const charsCount = document.getElementById("charsCount");
     const copyBtn = document.getElementById("copyBtn");
 
-    let currentFile = null;
+    let selectedFile = null;
 
     dropZone.addEventListener("click", () => fileInput.click());
+    changeBtn.addEventListener("click", () => fileInput.click());
 
     dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -323,66 +379,78 @@
       e.preventDefault();
       dropZone.classList.remove("dragover");
       if (e.dataTransfer.files.length > 0) {
-        handleFileSelect(e.dataTransfer.files[0]);
+        onFileSelected(e.dataTransfer.files[0]);
       }
     });
 
     fileInput.addEventListener("change", (e) => {
       if (e.target.files.length > 0) {
-        handleFileSelect(e.target.files[0]);
+        onFileSelected(e.target.files[0]);
       }
     });
 
-    function handleFileSelect(file) {
-      currentFile = file;
+    function onFileSelected(file) {
+      selectedFile = file;
       fileName.textContent = file.name;
-      fileSize.textContent = (file.size / 1024).toFixed(1) + " KB";
-      fileInfo.style.display = "flex";
-      submitBtn.disabled = false;
+      
+      const sizeKb = file.size / 1024;
+      fileSize.textContent = sizeKb > 1024 
+        ? (sizeKb / 1024).toFixed(2) + " MB" 
+        : sizeKb.toFixed(1) + " KB";
+
+      fileIcon.textContent = file.name.toLowerCase().endsWith('.pdf') ? '📑' : '🖼️';
+      
+      dropZone.style.display = "none";
+      filePreview.style.display = "flex";
+      processBtn.disabled = false;
     }
 
-    submitBtn.addEventListener("click", async () => {
-      if (!currentFile) return;
+    processBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
 
-      submitBtn.disabled = true;
-      btnText.innerHTML = '<span class="loader"></span> Processing OCR on Render...';
-      const startTime = performance.now();
+      processBtn.disabled = true;
+      btnLabel.innerHTML = '<span class="spinner"></span> Processing on Render Cloud...';
+      const start = performance.now();
 
       const formData = new FormData();
-      formData.append("file", currentFile);
+      formData.append("file", selectedFile);
 
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch(CLOUD_API_URL, {
           method: "POST",
           body: formData
         });
 
-        const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
-        timeElapsed.textContent = elapsed + "s";
+        const elapsedSec = ((performance.now() - start) / 1000).toFixed(2);
+        timeElapsed.textContent = elapsedSec + "s";
 
         if (!response.ok) {
-          const errData = await response.json().catch(() => ({}));
-          throw new Error(errData.detail || `Server error: ${response.status}`);
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.detail || `Server error (${response.status})`);
         }
 
         const data = await response.json();
         pagesCount.textContent = data.pages_processed || 1;
-        outputBox.textContent = data.text || "(No readable text extracted)";
+        charsCount.textContent = (data.text || "").length;
+        outputArea.textContent = data.text || "(No readable text detected in document)";
+
         resultCard.style.display = "block";
         resultCard.scrollIntoView({ behavior: "smooth" });
 
-      } catch (err) {
-        alert("OCR Request Failed: " + err.message);
+      } catch (error) {
+        alert("OCR Failed: " + error.message + "\n\n(Note: If Render was asleep, it may take ~30-50s on the first request to wake up)");
       } finally {
-        submitBtn.disabled = false;
-        btnText.textContent = "Extract Text with OCR";
+        processBtn.disabled = false;
+        btnLabel.textContent = "Extract Text with Cloud OCR";
       }
     });
 
     copyBtn.addEventListener("click", () => {
-      navigator.clipboard.writeText(outputBox.textContent).then(() => {
-        copyBtn.textContent = "Copied!";
-        setTimeout(() => copyBtn.textContent = "Copy Text", 2000);
+      if (!outputArea.textContent) return;
+      navigator.clipboard.writeText(outputArea.textContent).then(() => {
+        const prev = copyBtn.textContent;
+        copyBtn.textContent = "✅ Copied!";
+        setTimeout(() => copyBtn.textContent = prev, 2000);
       });
     });
   </script>
