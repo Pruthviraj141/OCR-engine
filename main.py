@@ -73,9 +73,21 @@ app.add_middleware(
 
 
 
+from fastapi.responses import FileResponse
+
 @app.get("/")
 async def root():
     return {"message": "Indra OCR Service is running"}
+
+
+@app.get("/ui")
+async def web_ui():
+    index_file = Path(__file__).parent / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    raise HTTPException(status_code=404, detail="UI not found")
+
+
 
 
 @app.get("/health")

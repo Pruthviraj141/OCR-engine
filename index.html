@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indra OCR Engine - Live Test Interface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 24, 38, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --accent: #06b6d4;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --error: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e1b4b 0%, #090d16 100%);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 9999px;
+      color: var(--success);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    h1 {
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #fff 40%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .api-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      word-break: break-all;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      backdrop-filter: blur(16px);
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      margin-bottom: 2rem;
+    }
+
+    .upload-area {
+      border: 2px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 3rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .upload-area:hover, .upload-area.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.06);
+    }
+
+    .upload-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .upload-text {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-bottom: 0.4rem;
+    }
+
+    .upload-hint {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    .selected-file {
+      margin-top: 1.25rem;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.25rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.95rem;
+    }
+
+    .btn {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.9rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn:hover:not(:disabled) {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .result-section {
+      display: none;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .stats {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .stats span strong {
+      color: var(--text-main);
+    }
+
+    .copy-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .output-box {
+      width: 100%;
+      height: 380px;
+      background: #030712;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #e2e8f0;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .loader {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <div class="badge">
+        <span class="badge-dot"></span>
+        Render Service Live
+      </div>
+      <h1>Indra OCR Engine</h1>
+      <p class="subtitle">Extract text from PDFs and images using self-hosted Indra OCR</p>
+      <div class="api-status">API: https://ocr-engine-42cm.onrender.com/ocr</div>
+    </header>
+
+    <div class="card">
+      <div class="upload-area" id="dropZone">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">Click to upload or drag & drop</div>
+        <div class="upload-hint">Supports PDF, PNG, JPG, JPEG, WEBP, TIFF (Max 25 MB)</div>
+        <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.webp,.tiff,.tif,.bmp">
+      </div>
+
+      <div class="selected-file" id="fileInfo">
+        <span id="fileName">sample.pdf</span>
+        <span id="fileSize" style="color: var(--text-muted);">150 KB</span>
+      </div>
+
+      <button class="btn" id="submitBtn" disabled>
+        <span id="btnText">Extract Text with OCR</span>
+      </button>
+    </div>
+
+    <div class="card result-section" id="resultCard">
+      <div class="result-header">
+        <div class="stats">
+          <span>Processed: <strong id="pagesCount">0</strong> pages</span>
+          <span>Time: <strong id="timeElapsed">0s</strong></span>
+        </div>
+        <button class="copy-btn" id="copyBtn">Copy Text</button>
+      </div>
+      <div class="output-box" id="outputBox"></div>
+    </div>
+  </div>
+
+  <script>
+    // If served from FastAPI (e.g. localhost:8000), use /ocr. Otherwise fallback to live Render URL.
+    const API_URL = (window.location.protocol.startsWith('http') && !window.location.host.includes('render.com')) 
+      ? "/ocr" 
+      : "https://ocr-engine-42cm.onrender.com/ocr";
+
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const fileInfo = document.getElementById("fileInfo");
+    const fileName = document.getElementById("fileName");
+    const fileSize = document.getElementById("fileSize");
+    const submitBtn = document.getElementById("submitBtn");
+    const btnText = document.getElementById("btnText");
+    const resultCard = document.getElementById("resultCard");
+    const outputBox = document.getElementById("outputBox");
+    const pagesCount = document.getElementById("pagesCount");
+    const timeElapsed = document.getElementById("timeElapsed");
+    const copyBtn = document.getElementById("copyBtn");
+
+    let currentFile = null;
+
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      currentFile = file;
+      fileName.textContent = file.name;
+      fileSize.textContent = (file.size / 1024).toFixed(1) + " KB";
+      fileInfo.style.display = "flex";
+      submitBtn.disabled = false;
+    }
+
+    submitBtn.addEventListener("click", async () => {
+      if (!currentFile) return;
+
+      submitBtn.disabled = true;
+      btnText.innerHTML = '<span class="loader"></span> Processing OCR on Render...';
+      const startTime = performance.now();
+
+      const formData = new FormData();
+      formData.append("file", currentFile);
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          body: formData
+        });
+
+        const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+        timeElapsed.textContent = elapsed + "s";
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.detail || `Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        pagesCount.textContent = data.pages_processed || 1;
+        outputBox.textContent = data.text || "(No readable text extracted)";
+        resultCard.style.display = "block";
+        resultCard.scrollIntoView({ behavior: "smooth" });
+
+      } catch (err) {
+        alert("OCR Request Failed: " + err.message);
+      } finally {
+        submitBtn.disabled = false;
+        btnText.textContent = "Extract Text with OCR";
+      }
+    });
+
+    copyBtn.addEventListener("click", () => {
+      navigator.clipboard.writeText(outputBox.textContent).then(() => {
+        copyBtn.textContent = "Copied!";
+        setTimeout(() => copyBtn.textContent = "Copy Text", 2000);
+      });
+    });
+  </script>
+</body>
+</html>
