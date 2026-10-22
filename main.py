@@ -53,12 +53,24 @@ async def lifespan(app: FastAPI):
     yield
 
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(
     title="Indra OCR Service",
     description="Minimal self-hosted Indra OCR service running locally on CPU. No API key required.",
     version="1.0.0",
     lifespan=lifespan,
 )
+
+# Enable CORS for browser UIs
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 
 @app.get("/")
